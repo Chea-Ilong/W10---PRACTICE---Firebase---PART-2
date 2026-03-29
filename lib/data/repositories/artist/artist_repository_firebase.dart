@@ -12,18 +12,26 @@ class ArtistRepositoryFirebase implements ArtistRepository {
     '/artists.json',
   );
 
+  List<Artist>? _cachedArtists;
+
   @override
-  Future<List<Artist>> fetchArtists() async {
+  Future<List<Artist>> fetchArtists({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedArtists != null) {
+      return _cachedArtists!;
+    }
+
     final http.Response response = await http.get(artistsUri);
 
     if (response.statusCode == 200) {
-      // 1 - Send the retrieved list of songs
+      // 1 - Send the retrieved list of artists
       Map<String, dynamic> songJson = json.decode(response.body);
 
       List<Artist> result = [];
       for (final entry in songJson.entries) {
         result.add(ArtistDto.fromJson(entry.key, entry.value));
       }
+
+      _cachedArtists = result;
       return result;
     } else {
       // 2- Throw expcetion if any issue

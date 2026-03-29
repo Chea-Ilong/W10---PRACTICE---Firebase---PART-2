@@ -31,17 +31,23 @@ class LibraryContent extends StatelessWidget {
         break;
       case AsyncValueState.success:
         List<LibraryItemData> data = asyncValue.data!;
-        content = ListView.builder(
-          itemCount: data.length,
-          itemBuilder: (context, index) => LibraryItemTile(
-            data: data[index],
-            isPlaying: mv.isSongPlaying(data[index].song),
-            onTap: () {
-              mv.start(data[index].song);
-            },
-            onLike: () {
-              mv.likeSong(data[index].song.id);
-            },
+        content = RefreshIndicator(
+          onRefresh: () async {
+            await mv.fetchSong(forceRefresh: true);
+          },
+          child: ListView.builder(
+            physics: AlwaysScrollableScrollPhysics(),
+            itemCount: data.length,
+            itemBuilder: (context, index) => LibraryItemTile(
+              data: data[index],
+              isPlaying: mv.isSongPlaying(data[index].song),
+              onTap: () {
+                mv.start(data[index].song);
+              },
+              onLike: () {
+                mv.likeSong(data[index].song.id);
+              },
+            ),
           ),
         );
     }

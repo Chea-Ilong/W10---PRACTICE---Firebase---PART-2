@@ -12,8 +12,14 @@ class SongRepositoryFirebase extends SongRepository {
     '/songs.json',
   );
 
+  List<Song>? _cachedSongs;
+
   @override
-  Future<List<Song>> fetchSongs() async {
+  Future<List<Song>> fetchSongs({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedSongs != null) {
+      return _cachedSongs!;
+    }
+
     final http.Response response = await http.get(songsUri);
 
     if (response.statusCode == 200) {
@@ -24,6 +30,8 @@ class SongRepositoryFirebase extends SongRepository {
       for (final entry in songJson.entries) {
         result.add(SongDto.fromJson(entry.key, entry.value));
       }
+
+      _cachedSongs = result;
       return result;
     } else {
       // 2- Throw expcetion if any issue
@@ -54,6 +62,16 @@ class SongRepositoryFirebase extends SongRepository {
       );
       if (patchResponse.statusCode != 200) {
         throw Exception('fail to like a song');
+      }
+
+      // Update cache
+      if (_cachedSongs != null) {
+        final index = _cachedSongs!.indexWhere((song) => song.id == songId);
+        if (index != -1) {
+          _cachedSongs![index] = _cachedSongs![index].copyWith(
+            numberOfLike: currentLikes + 1,
+          );
+        }
       }
     } else {
       throw Exception('Song with id $songId not found');
