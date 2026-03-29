@@ -62,9 +62,36 @@ class LibraryViewModel extends ChangeNotifier {
           .toList();
 
       this.data = AsyncValue.success(data);
-
     } catch (e) {
       // 3- Fetch is unsucessfull
+      data = AsyncValue.error(e);
+    }
+    notifyListeners();
+  }
+
+  Future<void> likeSong(String songId) async {
+    try {
+      await songRepository.likeSong(songId);
+
+      //check if the data is already fetch
+      if (data.state == AsyncValueState.success && data.data != null) {
+        List<LibraryItemData> currentItems = data.data!;
+
+        //find the song and update the number of like
+        List<LibraryItemData> updatedItems = currentItems.map((item) {
+          if (item.song.id == songId) {
+            //update only the liked song, other songs will remain the same
+            Song updatedSong = item.song.copyWith(
+              numberOfLike: item.song.numberOfLike + 1,
+            );
+            return LibraryItemData(song: updatedSong, artist: item.artist);
+          }
+          return item;
+        }).toList();
+
+        data = AsyncValue.success(updatedItems);
+      }
+    } catch (e) {
       data = AsyncValue.error(e);
     }
     notifyListeners();
